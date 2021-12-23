@@ -1857,19 +1857,33 @@ namespace MsgReader.Outlook
                         if (!string.IsNullOrEmpty(header))
                             headers = HeaderExtractor.GetHeaders(header);
                     }
+                    else
+                    {
+                        tempEmail = EmailAddress.GetValidEmailAddress(tempEmail);
+                    }
                 }
 
                 // PR_PRIMARY_SEND_ACCT can contain the smtp address of an exchange account
                 if (string.IsNullOrEmpty(tempEmail) || tempEmail.IndexOf("@", StringComparison.Ordinal) < 0)
                 {
-                    var testEmail = GetMapiPropertyString(MapiTags.PR_PRIMARY_SEND_ACCT);
-                    if(!string.IsNullOrEmpty(testEmail) && testEmail.IndexOf("\u0001", StringComparison.Ordinal) > 0)
+                    tempEmail = GetMapiPropertyString(MapiTags.PR_PRIMARY_SEND_ACCT);
+
+                    if (!string.IsNullOrEmpty(tempEmail) && tempEmail.Contains("\u0001"))
                     {
-                        tempEmail = EmailAddress.GetValidEmailAddress(testEmail);
+                        var parts = tempEmail.Split('\u0001');
+                        for (var i = parts.Length - 1; i > 0; i--)
+                        {
+                            if (!EmailAddress.IsEmailAddressValid(parts[i])) 
+                                continue;
+
+                            tempEmail = parts[i];
+                            break;
+                        }
                     }
                 }
 
                 tempEmail = EmailAddress.RemoveSingleQuotes(tempEmail);
+
                 var tempDisplayName = EmailAddress.RemoveSingleQuotes(GetMapiPropertyString(MapiTags.PR_SENDER_NAME));
 
                 if (string.IsNullOrEmpty(tempEmail) && headers?.From != null)
