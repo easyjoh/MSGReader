@@ -3,7 +3,7 @@
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
 //
-// Copyright (c) 2013-2021 Magic-Sessions. (www.magic-sessions.com)
+// Copyright (c) 2013-2022 Magic-Sessions. (www.magic-sessions.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,13 +25,13 @@
 //
 
 using System;
-using System.Drawing;
-using System.Drawing.Imaging;
 using System.IO;
 using MsgReader.Exceptions;
 using MsgReader.Helpers;
 using MsgReader.Localization;
 using OpenMcdf;
+using SixLabors.ImageSharp;
+
 // ReSharper disable MemberCanBePrivate.Global
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 
@@ -80,7 +80,7 @@ namespace MsgReader.Outlook
             /// <summary>
             /// True when the attachment is inline
             /// </summary>
-            public bool IsInline { get; }
+            public bool IsInline { get; internal set; }
 
             /// <summary>
             /// True when the attachment is a contact photo. This can only be true
@@ -110,6 +110,11 @@ namespace MsgReader.Outlook
             /// Returns <c>true</c> when the attachment is an OLE attachment
             /// </summary>
             public bool OleAttachment { get; }
+
+            /// <summary>
+            /// Returns the mime/type that has been set for the attachment, null will be returned when not set
+            /// </summary>
+            public string MimeType { get; }
             #endregion
             
             #region Constructors
@@ -187,6 +192,7 @@ namespace MsgReader.Outlook
                     case MapiTags.ATTACH_OLE:
                         var storage = GetMapiProperty(MapiTags.PR_ATTACH_DATA_BIN) as CFStorage;
                         var attachmentOle = new Attachment(new Storage(storage), null);
+
                         _data = attachmentOle.GetStreamBytes("CONTENTS");
                         if (_data != null)
                         {
@@ -207,7 +213,7 @@ namespace MsgReader.Outlook
                             {
                                 SaveImageAsPng(40);
                             }
-                            catch (ArgumentException)
+                            catch (Exception)
                             {
                                 SaveImageAsPng(0);
                             }
@@ -219,6 +225,8 @@ namespace MsgReader.Outlook
                         IsInline = true;
                         break;
                 }
+
+                MimeType = GetMapiPropertyString(MapiTags.PR_ATTACH_MIME_TAG);
             }
             #endregion
 
@@ -264,14 +272,15 @@ namespace MsgReader.Outlook
                 var length = _data.Length - bufferOffset;
                 var bytes = new byte[length];
                 Buffer.BlockCopy(_data, bufferOffset, bytes, 0, length);
+
                 using (var inputStream = StreamHelpers.Manager.GetStream("Attachment.cs", bytes, 0, bytes.Length))
-                using (var image = Image.FromStream(inputStream))
+                using (var image = Image.Load(inputStream))
                 using (var outputStream = StreamHelpers.Manager.GetStream())
                 {
-                    image.Save(outputStream, ImageFormat.Png);
+                    image.SaveAsPng(outputStream);
                     outputStream.Position = 0;
                     _data = outputStream.ToArray();
-                    FileName = "ole0.bmp";
+                    FileName = $"ole{(RenderingPosition != -1 ? RenderingPosition : 0)}.png";
                 }
             }
             #endregion

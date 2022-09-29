@@ -25,6 +25,7 @@
 //
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -76,20 +77,64 @@ namespace MsgReader.Helpers
 	            return memoryStream.ToArray();
 	        }
 	    }
-	    #endregion
-        
-        #region ReadLineAsAscii
-        /// <summary>
-	    /// Read a line from the stream. <see cref="ReadLineAsBytes"/> for more documentation.
-	    /// </summary>
-	    /// <param name="stream">The stream to read from</param>
-	    /// <returns>A line read from the stream or <see langword="null"/> if nothing could be read from the stream</returns>
-	    /// <exception cref="ArgumentNullException">If <paramref name="stream"/> is <see langword="null"/></exception>
-	    public static string ReadLineAsAscii(Stream stream)
+
+
+		public static bool ReadLineAsBytes(ref byte[] stream, int currentPos, ref int EndPos)
+		{
+			if (stream == null)
+				throw new ArgumentNullException(nameof(stream));
+
+			//using (var memoryStream = StreamHelpers.Manager.GetStream())
+			{
+				EndPos = currentPos;
+				if (EndPos > stream.Length) return false;
+
+				//bytes = new List<byte>();
+				while (true)
+				{
+					byte justRead = stream[EndPos];
+
+					EndPos++;
+
+					// Do not write \r or \n
+					if (justRead != '\r' && justRead != '\n')
+					{; }// bytes.Add(justRead);
+					
+					// Last point in CRLF pair
+					if (justRead == '\n')
+						break;
+				}
+
+				return true;
+				//return bytes.ToArray();
+
+			}
+		}
+		#endregion
+
+		#region ReadLineAsAscii
+		/// <summary>
+		/// Read a line from the stream. <see cref="ReadLineAsBytes"/> for more documentation.
+		/// </summary>
+		/// <param name="stream">The stream to read from</param>
+		/// <returns>A line read from the stream or <see langword="null"/> if nothing could be read from the stream</returns>
+		/// <exception cref="ArgumentNullException">If <paramref name="stream"/> is <see langword="null"/></exception>
+		public static string ReadLineAsAscii(Stream stream)
 	    {
 	        var readFromStream = ReadLineAsBytes(stream);
 	        return readFromStream != null ? Encoding.ASCII.GetString(readFromStream) : null;
 	    }
-	    #endregion
+
+
+		public static string ReadLineAsAscii(ref byte[] stream, int currentPos, ref int endPos)
+		{
+			bool retval = ReadLineAsBytes(ref stream, currentPos, ref endPos);
+			if (!retval) return null;
+
+			var readFromStream = Encoding.ASCII.GetString(stream, currentPos, endPos - currentPos).Replace("\r\n","").Replace("\n", "");
+			return readFromStream;
+			//return readFromStream != null ? Encoding.ASCII.GetString(readFromStream) : null;
+		}
+		#endregion
 	}
 }

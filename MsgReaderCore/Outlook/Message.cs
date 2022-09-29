@@ -3,7 +3,7 @@
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
 //
-// Copyright (c) 2013-2021 Magic-Sessions. (www.magic-sessions.com)
+// Copyright (c) 2013-2022 Magic-Sessions. (www.magic-sessions.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -315,6 +315,11 @@ namespace MsgReader.Outlook
         /// EFS – Exchange transaction.
         /// </summary>
         WorkSiteEmsSentRe,
+
+        /// <summary>
+        /// The message is Outlook journal message
+        /// </summary>
+        Journal
     }
     #endregion
 
@@ -425,6 +430,8 @@ namespace MsgReader.Outlook
             /// </summary>
             private readonly List<object> _attachments = new List<object>();
 
+            private bool _attachmentsChecked;
+
             /// <summary>
             /// Contains the subject prefix of the <see cref="Storage.Message"/> object
             /// </summary>
@@ -480,6 +487,11 @@ namespace MsgReader.Outlook
             /// </summary>
             private Contact _contact;
 
+            /// <summary>
+            /// Contains the <see cref="Storage.Log"/> object
+            /// </summary>
+            private Log _log;
+            
             /// <summary>
             /// Contains the <see cref="Storage.ReceivedBy"/> object
             /// </summary>
@@ -730,6 +742,10 @@ namespace MsgReader.Outlook
 
                         case "IPM.NOTE.MICROSOFT.CONVERSATION":
                             _type = MessageType.SkypeForBusinessConversation;
+                            break;
+
+                        case "IPM.ACTIVITY":
+                            _type = MessageType.Journal;
                             break;
                     }
 
@@ -987,7 +1003,33 @@ namespace MsgReader.Outlook
             /// Returns a list with <see cref="Storage.Attachment"/> and/or <see cref="Storage.Message"/> 
             /// objects that are attachted to the <see cref="Storage.Message"/> object
             /// </summary>
-            public List<object> Attachments => _attachments;
+            public List<object> Attachments
+            {
+                get
+                {
+                    if (_attachmentsChecked)
+                        return _attachments;
+
+                    var text = string.Empty;
+
+                    if (_bodyHtml != null)
+                    {
+                        // Force the loading of the HTML
+                        text = BodyHtml;
+                    }
+
+                    // Check if the attachment is really inline by looking to the CID in the HTML message
+                    foreach (var attachment in _attachments)
+                    {
+                        if (attachment is Attachment attach && attach.IsInline)
+                            attach.IsInline = text.Contains($"cid:{attach.ContentId}");
+                    }
+
+                    _attachmentsChecked = true;
+
+                    return _attachments;
+                }
+            }
 
             /// <summary>
             /// Returns the rendering position of this <see cref="Storage.Message"/> object when it was added to another
@@ -1165,6 +1207,22 @@ namespace MsgReader.Outlook
                 }
             }
 
+            // ReSharper disable once CSharpWarnings::CS0109
+            /// <summary>
+            /// Returns a <see cref="Log"/> object. This property is only available when the <see cref="Storage.Message.Type"/>
+            /// is a <see cref="MessageType.Journal"/>
+            /// </summary>
+            public new Log Log
+            {
+                get
+                {
+                    if (_type != MessageType.Journal)
+                        return null;
+
+                    return _log ?? (_log = new Log(this));
+                }
+            }
+
             /// <summary>
             /// Returns the categories that are placed in the Outlook message.
             /// Only supported for Outlook messages from Outlook 2007 or higher
@@ -1207,6 +1265,15 @@ namespace MsgReader.Outlook
 
                     rtfBytes = RtfDecompressor.DecompressRtf(rtfBytes);
                     _bodyRtf = MessageCodePage.GetString(rtfBytes);
+
+                    if (!_bodyRtf.Contains(@"\rtf"))
+                    {
+                        _bodyRtf = Encoding.UTF8.GetString(rtfBytes);
+
+                        if (!_bodyRtf.Contains(@"\rtf"))
+                            _bodyRtf = Encoding.ASCII.GetString(rtfBytes);
+                    }
+
                     return _bodyRtf;
                 }
             }
@@ -1272,9 +1339,16 @@ namespace MsgReader.Outlook
                         return _messageLocalId;
 
                     var lcid = GetMapiPropertyInt32(MapiTags.PR_MESSAGE_LOCALE_ID);
-
                     if (!lcid.HasValue) return null;
-                    _messageLocalId = new RegionInfo(lcid.Value);
+
+                    var cultureInfo = new CultureInfo(lcid.Value);
+                    if (cultureInfo.IsNeutralCulture)
+                    {
+                        var specificCulture = CultureInfo.CreateSpecificCulture(cultureInfo.Name);
+                        _messageLocalId = new RegionInfo(specificCulture.LCID);
+                    }
+                    else
+                        _messageLocalId = new RegionInfo(lcid.Value);
 
                     return _messageLocalId;
                 }
@@ -1550,11 +1624,12 @@ namespace MsgReader.Outlook
 
                 try
                 {
-                    //signedCms.CheckSignature(signedCms.Certificates, false);
                     foreach (var cert in signedCms.Certificates)
-                        SignatureIsValid = cert.Verify();
+                    {
+                        if (!cert.Verify())
+                            SignatureIsValid = false;
+                    }
 
-                    SignatureIsValid = true;
                     foreach (var cryptographicAttributeObject in signedCms.SignerInfos[0].SignedAttributes)
                     {
                         if (cryptographicAttributeObject.Values[0] is Pkcs9SigningTime pkcs9SigningTime)
@@ -1626,6 +1701,12 @@ namespace MsgReader.Outlook
                 using (var memoryStream = StreamHelpers.Manager.GetStream("Message.cs", attachment.Data, 0, attachment.Data.Length))
                 {
                     var eml = Mime.Message.Load(memoryStream);
+
+                    SignatureIsValid = eml.SignatureIsValid;
+                    SignedBy = eml.SignedBy;
+                    SignedOn = eml.SignedOn;
+                    SignedCertificate = eml.SignedCertificate;
+                    
                     if (eml.TextBody != null)
                         _bodyText = eml.TextBody.GetBodyAsText();
 
@@ -1855,7 +1936,10 @@ namespace MsgReader.Outlook
                         // Get address from email headers. The headers are not present when the addressType = "EX"
                         var header = GetStreamAsString(MapiTags.HeaderStreamName, Encoding.Unicode);
                         if (!string.IsNullOrEmpty(header))
+                        {
+                            Logger.WriteToLog("Getting internet headers");
                             headers = HeaderExtractor.GetHeaders(header);
+                        }
                     }
                     else
                     {
@@ -1870,6 +1954,8 @@ namespace MsgReader.Outlook
 
                     if (!string.IsNullOrEmpty(tempEmail) && tempEmail.Contains("\u0001"))
                     {
+                        Logger.WriteToLog("Parsing sender e-mail Exchange Active Directory string");
+
                         var parts = tempEmail.Split('\u0001');
                         for (var i = parts.Length - 1; i > 0; i--)
                         {
@@ -1887,10 +1973,26 @@ namespace MsgReader.Outlook
                 var tempDisplayName = EmailAddress.RemoveSingleQuotes(GetMapiPropertyString(MapiTags.PR_SENDER_NAME));
 
                 if (string.IsNullOrEmpty(tempEmail) && headers?.From != null)
+                {
+                    Logger.WriteToLog("Reading value for sender from e-mail headers");
                     tempEmail = EmailAddress.RemoveSingleQuotes(headers.From.Address);
+                }
 
                 if (string.IsNullOrEmpty(tempDisplayName) && headers?.From != null)
                     tempDisplayName = headers.From.DisplayName;
+
+                if (!string.IsNullOrEmpty(tempDisplayName) &&
+                    tempDisplayName.StartsWith("/O=", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    Logger.WriteToLog("Parsing sender display name Exchange Active Directory string");
+
+                    var parts = tempDisplayName.Split(new[] {'/'}, StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length > 0)
+                    {
+                        var lastPart = parts[parts.Length - 1];
+                        tempDisplayName = lastPart.Contains("=") ? lastPart.Split('=')[1] : lastPart;
+                    }
+                }
 
                 var email = tempEmail;
                 var displayName = tempDisplayName;
@@ -1899,6 +2001,7 @@ namespace MsgReader.Outlook
                 if (!EmailAddress.IsEmailAddressValid(tempEmail) && EmailAddress.IsEmailAddressValid(tempDisplayName))
                 {
                     // Swap then
+                    Logger.WriteToLog("Swapping e-mail and display name");
                     email = tempDisplayName;
                     displayName = tempEmail;
                 }
@@ -1925,6 +2028,7 @@ namespace MsgReader.Outlook
                 // Sometimes the E-mail address and displayname get swapped so check if they are valid
                 if (!EmailAddress.IsEmailAddressValid(tempEmail) && EmailAddress.IsEmailAddressValid(tempDisplayName))
                 {
+                    Logger.WriteToLog("Swapping e-mail and display name");
                     // Swap then
                     email = tempDisplayName;
                     displayName = tempEmail;
@@ -1941,7 +2045,10 @@ namespace MsgReader.Outlook
 
                 // Set the representing sender
                 if (!string.IsNullOrWhiteSpace(email))
+                {
+                    Logger.WriteToLog("Setting sender representing");
                     SenderRepresenting = new SenderRepresenting(email, displayName, representingAddressType);
+                }
             }
             #endregion
             

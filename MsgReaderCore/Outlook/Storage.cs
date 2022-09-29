@@ -3,7 +3,7 @@
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
 //
-// Copyright (c) 2013-2021 Magic-Sessions. (www.magic-sessions.com)
+// Copyright (c) 2013-2022 Magic-Sessions. (www.magic-sessions.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -92,6 +92,11 @@ namespace MsgReader.Outlook
         private Encoding _internetCodepage;
 
         /// <summary>
+        /// <see cref="LocalId"/>
+        /// </summary>
+        private int? _localId;
+
+        /// <summary>
         /// Contains the <see cref="Encoding"/> that is used for the <see cref="Message.BodyRtf"/>.
         /// It will contain null when the codepage could not be read from the <see cref="Storage.Message"/>
         /// </summary>
@@ -137,6 +142,11 @@ namespace MsgReader.Outlook
         }
 
         /// <summary>
+        /// Returns the Windows LCID of the end user who created this message
+        /// </summary>
+        public int? LocalId => _localId ?? (_localId = GetMapiPropertyInt32(MapiTags.PR_MESSAGE_LOCALE_ID));
+
+        /// <summary>
         /// Returns the <see cref="Encoding"/> that is used for the <see cref="Message.BodyRtf"/>.
         /// It will return the systems default encoding when the codepage could not be read from 
         /// the <see cref="Storage.Message"/>
@@ -171,7 +181,9 @@ namespace MsgReader.Outlook
         // ReSharper disable once UnusedMember.Local
         private Storage()
         {
-            
+#if (NET5 || NET6)            
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+#endif
         }
 
         /// <summary>
@@ -195,6 +207,7 @@ namespace MsgReader.Outlook
             }
 
             // ReSharper disable once VirtualMemberCallInConstructor
+            // ReSharper disable once PossibleNullReferenceException
             LoadStorage(_compoundFile.RootStorage);
         }
 
@@ -219,6 +232,7 @@ namespace MsgReader.Outlook
             }
 
             // ReSharper disable once VirtualMemberCallInConstructor
+            // ReSharper disable once PossibleNullReferenceException
             LoadStorage(_compoundFile.RootStorage);
         }
 
@@ -240,7 +254,7 @@ namespace MsgReader.Outlook
         {
             Dispose();
         }
-        #endregion
+#endregion
 
         #region LoadStorage
         /// <summary>
@@ -276,6 +290,8 @@ namespace MsgReader.Outlook
             if (!_streamStatistics.ContainsKey(streamName))
                 return null;
 
+            Logger.WriteToLog($"Getting stream with name '{streamName}' as bytes");
+
             // Get statistics for stream 
             var stream = _streamStatistics[streamName];
             return stream.GetData();
@@ -291,6 +307,8 @@ namespace MsgReader.Outlook
         {
             if (!_streamStatistics.ContainsKey(streamName))
                 return null;
+
+            Logger.WriteToLog($"Getting stream with name '{streamName}'");
 
             // Get statistics for stream 
             var stream = _streamStatistics[streamName];
@@ -308,6 +326,8 @@ namespace MsgReader.Outlook
         /// <returns> The data in the specified stream as a string. </returns>
         private string GetStreamAsString(string streamName, Encoding streamEncoding)
         {
+            Logger.WriteToLog($"Getting stream with name '{streamName}' as string with encoding '{streamEncoding}'");
+
             var bytes = GetStreamBytes(streamName);
             if (bytes == null)
                 return null;
@@ -337,6 +357,12 @@ namespace MsgReader.Outlook
             if (mapiTagMapping != null)
                 propIdentifier = mapiTagMapping.EntryOrStringIdentifier;
 
+            if (mapiTagMapping == null)
+                mapiTagMapping = _namedProperties?.Find(m => m.EntryOrStringIdentifier == propIdentifier);
+
+            if (mapiTagMapping != null)
+                propIdentifier = mapiTagMapping.PropertyIdentifier;
+
             // Try get prop value from stream or storage
             // If not found in stream or storage try get prop value from property stream
             var propValue = GetMapiPropertyFromStreamOrStorage(propIdentifier) ??
@@ -354,6 +380,8 @@ namespace MsgReader.Outlook
         // ReSharper disable once UnusedMember.Global
         public List<string> GetNamedProperties()
         {
+            Logger.WriteToLog("Getting named properties");
+
             return (from namedProperty in _namedProperties
                 where namedProperty.HasStringIdentifier
                 select namedProperty.PropertyIdentifier).ToList();
@@ -398,6 +426,8 @@ namespace MsgReader.Outlook
         /// <returns> The value of the MAPI property or null if not found. </returns>
         private object GetMapiPropertyFromStreamOrStorage(string propIdentifier)
         {
+            Logger.WriteToLog($"Getting property with id '{propIdentifier}' from stream or storage");
+
             // Get list of stream and storage identifiers which map to properties
             var propKeys = new List<string>();
             propKeys.AddRange(_streamStatistics.Keys);
@@ -486,6 +516,8 @@ namespace MsgReader.Outlook
         /// <returns> The value of the MAPI property or null if not found. </returns>
         private object GetMapiPropertyFromPropertyStream(string propIdentifier)
         {
+            Logger.WriteToLog($"Getting mapi property with id '{propIdentifier}' from property stream");
+
             // If no property stream return null
             if (!_streamStatistics.ContainsKey(MapiTags.PropertiesStream))
                 return null;
@@ -542,6 +574,7 @@ namespace MsgReader.Outlook
         /// <returns> The value of the MAPI property as a string. </returns>
         private UnsendableRecipients GetUnsendableRecipients(string propIdentifier)
         {
+            Logger.WriteToLog($"Getting unsendable recipients with property id '{propIdentifier}'");
             var data = GetMapiPropertyBytes(propIdentifier);
             return data != null ? new UnsendableRecipients(data) : null;
         } 
@@ -553,6 +586,7 @@ namespace MsgReader.Outlook
         /// <returns> The value of the MAPI property as a string. </returns>
         private string GetMapiPropertyString(string propIdentifier)
         {
+            Logger.WriteToLog($"Getting mapi property string with id '{propIdentifier}'");
             return GetMapiProperty(propIdentifier) as string;
         }
 
@@ -563,6 +597,7 @@ namespace MsgReader.Outlook
         /// <returns> The value of the MAPI property as a list of string. </returns>
         private ReadOnlyCollection<string> GetMapiPropertyStringList(string propIdentifier)
         {
+            Logger.WriteToLog($"Getting mapi property string list with id '{propIdentifier}'");
             var list = GetMapiProperty(propIdentifier) as List<string>;
             return list?.AsReadOnly();
         }
@@ -574,6 +609,7 @@ namespace MsgReader.Outlook
         /// <returns> The value of the MAPI property as a integer. </returns>
         private int? GetMapiPropertyInt32(string propIdentifier)
         {
+            Logger.WriteToLog($"Getting mapi property Int32 id '{propIdentifier}'");
             return (int?)GetMapiProperty(propIdentifier);
         }
 
@@ -584,6 +620,7 @@ namespace MsgReader.Outlook
         /// <returns> The value of the MAPI property as a double. </returns>
         private double? GetMapiPropertyDouble(string propIdentifier)
         {
+            Logger.WriteToLog($"Getting mapi property Double id '{propIdentifier}'");
             return (double?) GetMapiProperty(propIdentifier);
         }
 
@@ -594,6 +631,7 @@ namespace MsgReader.Outlook
         /// <returns> The value of the MAPI property as a datetime or null when not set </returns>
         private DateTime? GetMapiPropertyDateTime(string propIdentifier)
         {
+            Logger.WriteToLog($"Getting mapi property DateTime id '{propIdentifier}'");
             return (DateTime?)GetMapiProperty(propIdentifier);
         }
 
@@ -604,6 +642,7 @@ namespace MsgReader.Outlook
         /// <returns> The value of the MAPI property as a boolean or null when not set. </returns>
         private bool? GetMapiPropertyBool(string propIdentifier)
         {
+            Logger.WriteToLog($"Getting mapi property Bool id '{propIdentifier}'");
             return (bool?)GetMapiProperty(propIdentifier); 
         }
 
@@ -614,6 +653,7 @@ namespace MsgReader.Outlook
         /// <returns> The value of the MAPI property as a byte array. </returns>
         private byte[] GetMapiPropertyBytes(string propIdentifier)
         {
+            Logger.WriteToLog($"Getting mapi property Bytes id '{propIdentifier}'");
             return (byte[])GetMapiProperty(propIdentifier);
         }
         #endregion

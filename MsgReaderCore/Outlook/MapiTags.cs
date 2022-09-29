@@ -3,7 +3,7 @@
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
 //
-// Copyright (c) 2013-2021 Magic-Sessions. (www.magic-sessions.com)
+// Copyright (c) 2013-2022 Magic-Sessions. (www.magic-sessions.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -1346,6 +1346,58 @@ namespace MsgReader.Outlook
         ///     Only available from Outlook 2007 and up.
         /// </summary>
         public const string PR_FLAG_COMPLETE_TIME = "1091";
+        #endregion
+
+        #region Log constants
+        /// <summary>
+        /// The log type
+        /// </summary>
+        public const string LogType = "8700";
+
+        /// <summary>
+        /// The start date/time of the log
+        /// </summary>
+        public const string LogStart = "8706";
+
+        /// <summary>
+        /// The duration of the log
+        /// </summary>
+        public const string LogDuration = "8707";
+
+        /// <summary>
+        /// The end date/time of the log
+        /// </summary>
+        public const string LogEnd = "8708";
+
+        /// <summary>
+        /// The log flags
+        /// </summary>
+        public const string LogFlags = "870C";
+
+        /// <summary>
+        /// If the log has been printed
+        /// </summary>
+        public const string LogDocPrinted = "870E";
+
+        /// <summary>
+        /// If the log has been saved
+        /// </summary>
+        public const string LogDocSaved = "870F";
+
+        /// <summary>
+        /// If the log has been routed
+        /// </summary>
+        public const string LogDocRouted = "8710";
+
+        /// <summary>
+        /// If the log has been posted
+        /// </summary>
+        public const string LogDocPosted = "8711";
+
+        /// <summary>
+        /// Log description
+        /// </summary>
+        public const string LogTypeDesc = "8712";
         #endregion
 
         #region Task constants
