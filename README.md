@@ -1,7 +1,7 @@
 What is MSGReader
 =========
 
-MSGReader is a C# .NET 4.6.1 and Standard 2.1 library to read Outlook MSG and EML (Mime 1.0) files. Almost all common object in Outlook are supported:
+MSGReader is a C# .NET 4.6.2, NET Standard 2.0 and NET 5.0 library to read Outlook MSG and EML (Mime 1.0) files. Almost all common object in Outlook are supported:
 
 - E-mail
 - Appointment
@@ -97,6 +97,8 @@ Translations
 Installing via NuGet
 ====================
 
+[![NuGet](https://img.shields.io/nuget/v/MSGReader.svg?style=flat-square)](https://www.nuget.org/packages/MSGReader)
+
 The easiest way to install MSGReader is via NuGet.
 
 In Visual Studio's Package Manager Console, simply enter the following command:
@@ -123,7 +125,7 @@ msgreader.ExtractToFolderFromCom "the msg file to read", "the folder where to pl
 
 ## License Information
 
-MsgReader is Copyright (C) 2013-2021 Magic-Sessions and is licensed under the MIT license:
+MsgReader is Copyright (C) 2013-2023 Magic-Sessions and is licensed under the MIT license:
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -149,6 +151,4 @@ Core Team
 
 Support
 =======
-If you like my work then please consider a donation as a thank you.
-
-<a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=NS92EXB2RDPYA" target="_blank"><img src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" /></a>
+If you like my work then please consider a donation as a thank you by using the donate button at the top

@@ -3,7 +3,7 @@
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
 //
-// Copyright (c) 2013-2022 Magic-Sessions. (www.magic-sessions.com)
+// Copyright (c) 2013-2023 Magic-Sessions. (www.magic-sessions.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -26,26 +26,26 @@
 
 using System;
 
-namespace MsgReader.Exceptions
+namespace MsgReader.Exceptions;
+
+/// <summary>
+///     Raised when it is not possible to remove the <see cref="Outlook.Storage.Attachment" /> or
+///     <see cref="Outlook.Storage.Message" /> from
+///     the <see cref="Outlook.Storage.Message" />
+/// </summary>
+public class MRCannotRemoveAttachment : Exception
 {
-    /// <summary>
-    /// Raised when it is not possible to remove the <see cref="Outlook.Storage.Attachment"/> or <see cref="Outlook.Storage.Message"/> from
-    /// the <see cref="Outlook.Storage.Message"/>
-    /// </summary>
-    public class MRCannotRemoveAttachment : Exception
+    internal MRCannotRemoveAttachment()
     {
-        internal MRCannotRemoveAttachment()
-        {
-        }
+    }
 
-        internal MRCannotRemoveAttachment(string message)
-            : base(message)
-        {
-        }
+    internal MRCannotRemoveAttachment(string message)
+        : base(message)
+    {
+    }
 
-        internal MRCannotRemoveAttachment(string message, Exception inner)
-            : base(message, inner)
-        {
-        }
+    internal MRCannotRemoveAttachment(string message, Exception inner)
+        : base(message, inner)
+    {
     }
 }

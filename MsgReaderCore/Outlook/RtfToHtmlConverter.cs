@@ -3,7 +3,7 @@
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
 //
-// Copyright (c) 2013-2022 Magic-Sessions. (www.magic-sessions.com)
+// Copyright (c) 2013-2023 Magic-Sessions. (www.magic-sessions.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -26,33 +26,26 @@
 
 //using System.Text;
 
-using RtfPipe;
+namespace MsgReader.Outlook;
 
-namespace MsgReader.Outlook
+/// <summary>
+///     This class is used to convert RTF to HTML
+/// </summary>
+internal static class RtfToHtmlConverter
 {
+    #region ConvertRtfToHtml
     /// <summary>
-    /// This class is used to convert RTF to HTML
+    ///     Convert RTF to HTML
     /// </summary>
-    internal static class RtfToHtmlConverter
+    /// <param name="rtf">The rtf string</param>
+    /// <returns></returns>
+    public static string ConvertRtfToHtml(string rtf)
     {
-        #region ConvertRtfToHtml
-        /// <summary>
-        /// Convert RTF to HTML
-        /// </summary>
-        /// <param name="rtf">The rtf string</param>
-        /// <returns></returns>
-        public static string ConvertRtfToHtml(string rtf)
-        {
-            if (string.IsNullOrEmpty(rtf))
-                return string.Empty;
+        if (string.IsNullOrEmpty(rtf))
+            return string.Empty;
 
-            //var encoding = Encoding.ASCII;
-            //var bytes = encoding.GetBytes(rtf);
-            //rtf = encoding.GetString(bytes);
-
-            var html = RtfPipe.Rtf.ToHtml(rtf.Trim('\0'));
-            return html;
-        }
-        #endregion
+        var html = RtfPipe.Rtf.ToHtml(rtf.Trim('\0'));
+        return html;
     }
+    #endregion
 }

@@ -3,7 +3,7 @@
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
 //
-// Copyright (c) 2013-2022 Magic-Sessions. (www.magic-sessions.com)
+// Copyright (c) 2013-2023 Magic-Sessions. (www.magic-sessions.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -27,26 +27,25 @@
 
 using System;
 
-namespace MsgReader.Exceptions
+namespace MsgReader.Exceptions;
+
+/// <summary>
+///     Raised when the Microsoft Outlook signed message is invalid
+/// </summary>
+public class MRInvalidSignedFile : Exception
 {
-    /// <summary>
-    /// Raised when the Microsoft Outlook signed message is invalid
-    /// </summary>
-    public class MRInvalidSignedFile : Exception
+    ///
+    internal MRInvalidSignedFile()
     {
-        ///
-        internal MRInvalidSignedFile()
-        {
-        }
+    }
 
-        internal MRInvalidSignedFile(string message)
-            : base(message)
-        {
-        }
+    internal MRInvalidSignedFile(string message)
+        : base(message)
+    {
+    }
 
-        internal MRInvalidSignedFile(string message, Exception inner)
-            : base(message, inner)
-        {
-        }
+    internal MRInvalidSignedFile(string message, Exception inner)
+        : base(message, inner)
+    {
     }
 }

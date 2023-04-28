@@ -3,7 +3,7 @@
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
 //
-// Copyright (c) 2013-2022 Magic-Sessions. (www.magic-sessions.com)
+// Copyright (c) 2013-2023 Magic-Sessions. (www.magic-sessions.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -26,25 +26,24 @@
 
 using System;
 
-namespace MsgReader.Exceptions
+namespace MsgReader.Exceptions;
+
+/// <summary>
+///     Raised when the Microsoft Outlook message type or EML is not supported
+/// </summary>
+public class MRFileTypeNotSupported : Exception
 {
-    /// <summary>
-    /// Raised when the Microsoft Outlook message type or EML is not supported
-    /// </summary>
-    public class MRFileTypeNotSupported : Exception
+    internal MRFileTypeNotSupported()
     {
-        internal MRFileTypeNotSupported()
-        {
-        }
+    }
 
-        internal MRFileTypeNotSupported(string message)
-            : base(message)
-        {
-        }
+    internal MRFileTypeNotSupported(string message)
+        : base(message)
+    {
+    }
 
-        internal MRFileTypeNotSupported(string message, Exception inner)
-            : base(message, inner)
-        {
-        }
+    internal MRFileTypeNotSupported(string message, Exception inner)
+        : base(message, inner)
+    {
     }
 }

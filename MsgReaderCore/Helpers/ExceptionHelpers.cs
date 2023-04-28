@@ -3,7 +3,7 @@
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
 //
-// Copyright (c) 2013-2022 Magic-Sessions. (www.magic-sessions.com)
+// Copyright (c) 2013-2023 Magic-Sessions. (www.magic-sessions.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -26,23 +26,22 @@
 
 using System;
 
-namespace MsgReader.Helpers
+namespace MsgReader.Helpers;
+
+internal static class ExceptionHelpers
 {
-    internal static class ExceptionHelpers
+    #region GetInnerException
+    /// <summary>
+    ///     Get the complete inner exception tree
+    /// </summary>
+    /// <param name="e">The exception object</param>
+    /// <returns></returns>
+    public static string GetInnerException(Exception e)
     {
-        #region GetInnerException
-        /// <summary>
-        /// Get the complete inner exception tree
-        /// </summary>
-        /// <param name="e">The exception object</param>
-        /// <returns></returns>
-        public static string GetInnerException(Exception e)
-        {
-            var exception = e.Message + Environment.NewLine;
-            if (e.InnerException != null)
-                exception += GetInnerException(e.InnerException);
-            return exception;
-        }
-        #endregion
+        var exception = e.Message + Environment.NewLine;
+        if (e.InnerException != null)
+            exception += GetInnerException(e.InnerException);
+        return exception;
     }
+    #endregion
 }
